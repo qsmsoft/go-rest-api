@@ -74,3 +74,24 @@ func GetEventByID(id int64) (*Event, error) {
 
 	return &event, nil
 }
+
+func (e *Event) Update() error {
+	query := `
+		UPDATE events
+		SET name = $1, description = $2, location = $3, datetime = $4, user_id = $5
+		WHERE id = $6
+	`
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.Name, e.Description, e.Location, e.DateTime, e.UserID, e.ID)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
