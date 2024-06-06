@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qsmsoft/go-rest-api/db"
-	"github.com/qsmsoft/go-rest-api/models"
+	"github.com/qsmsoft/go-rest-api/routes"
 )
 
 func main() {
@@ -20,30 +19,11 @@ func main() {
 	fmt.Println("Database initialized and tables created successfully.")
 
 	server := gin.Default()
-	server.GET("/events", getEvents)
-	server.POST("/events", createEvent)
 
-	server.Run(":8080")
-}
+	routes.RegisterRoutes(server)
 
-func getEvents(c *gin.Context) {
-	events := models.GetAllEvents()
-	c.JSON(http.StatusOK, events)
-}
-
-func createEvent(c *gin.Context) {
-	var event models.Event
-	err := c.ShouldBindJSON(&event)
-
+	err := server.Run(":8080")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data."})
-		return
+		log.Fatalf("Failed to start server: %v", err)
 	}
-
-	event.ID = 1
-	event.UserID = 1
-
-	event.Save()
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
