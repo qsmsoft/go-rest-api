@@ -34,3 +34,21 @@ func (u *User) Save() error {
 
 	return nil
 }
+
+func (u *User) ValidateCredentials() error {
+	query := "SELECT password FROM users WHERE email = $1"
+	row := db.DB.QueryRow(query, u.Email)
+
+	var retrievedPassword string
+	err := row.Scan(&retrievedPassword)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedPassword)
+	if !passwordIsValid {
+		return fmt.Errorf("invalid credentials")
+	}
+
+	return nil
+}
