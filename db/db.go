@@ -36,11 +36,11 @@ func InitDB() {
 		log.Fatalf("Error connecting to the database: %q", err)
 	}
 
-	createEventsTables()
+	createTables()
 
 }
 
-func createEventsTables() {
+func createTables() {
 	createUsersTable := `
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -66,6 +66,21 @@ func createEventsTables() {
 	`
 
 	_, err = DB.Exec(createEventsTable)
+	if err != nil {
+		log.Fatalf("Error creating tables: %q", err)
+	}
+
+	createRegistrationsTable := `
+	CREATE TABLE IF NOT EXISTS registrations (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER,
+		event_id INTEGER,
+		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+		FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE
+	);
+	`
+
+	_, err = DB.Exec(createRegistrationsTable)
 	if err != nil {
 		log.Fatalf("Error creating tables: %q", err)
 	}
