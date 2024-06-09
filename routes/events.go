@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/qsmsoft/go-rest-api/models"
-	"github.com/qsmsoft/go-rest-api/utils"
 )
 
 func getEvents(c *gin.Context) {
@@ -34,26 +33,15 @@ func getEvent(c *gin.Context) {
 }
 
 func createEvent(c *gin.Context) {
-	token := c.Request.Header.Get("Authorization")
-	if token == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	userId, err := utils.VerifyToken(token)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
 	var event models.Event
-	err = c.ShouldBindJSON(&event)
+	err := c.ShouldBindJSON(&event)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data."})
 		return
 	}
 
+	userId := c.GetInt64("userId")
 	event.UserID = userId
 
 	err = event.Save()
@@ -72,26 +60,32 @@ func updateEvent(c *gin.Context) {
 		return
 	}
 
-	_, err = models.GetEventByID(id)
+	userId := c.GetInt64("userId")
+	event, err := models.GetEventByID(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data."})
 		return
 	}
 
-	var event models.Event
+	if event.UserID != userId {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "You are not authorized to update this event."})
+		return
+	}
+
+	var updatedEvent models.Event
 	err = c.ShouldBindJSON(&event)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update event."})
 		return
 	}
 
-	event.ID = id
+	updatedEvent.ID = id
 	err = event.Update()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update event."})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Event updated!", "event": event})
+	c.JSON(http.StatusOK, gin.H{"message": "Event updated!", "event": updatedEvent})
 }
 
 func deleteEvent(c *gin.Context) {
@@ -100,10 +94,15 @@ func deleteEvent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid event ID."})
 		return
 	}
-
+	userId := c.GetInt64("userId")
 	event, err := models.GetEventByID(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data."})
+		return
+	}
+
+	if event.UserID != userId {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "You are not authorized to delete this event."})
 		return
 	}
 
