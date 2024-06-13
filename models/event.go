@@ -112,3 +112,37 @@ func (e *Event) Delete() error {
 
 	return nil
 }
+
+func (e Event) Register(userId int64) error {
+	query := "INSERT INTO registrations (event_id, user_id) VALUES ($1, $2)"
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.ID, userId)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (e Event) CancelRegistration(userId int64) error {
+	query := "DELETE FROM registrations WHERE event_id = $1 AND user_id = $2"
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query: %w", err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(e.ID, userId)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
